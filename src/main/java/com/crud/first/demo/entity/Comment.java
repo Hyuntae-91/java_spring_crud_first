@@ -32,11 +32,12 @@ public class Comment {
 
     public Comment() {}
 
-    public Comment(String content, String username, String passwordHash, String passwordSalt) {
+    public Comment(String content, String username, String passwordHash, String passwordSalt, Board board) {
         this.content = content;
         this.username = username;
         this.passwordHash = passwordHash;
         this.passwordSalt = passwordSalt;
+        this.board = board;
     }
 
     public Integer getId() { return id; }
@@ -46,4 +47,5 @@ public class Comment {
     public String getPasswordHash() { return passwordHash; }
     public String getPasswordSalt() { return passwordSalt; }
     public void setStatus(Byte status) { this.status = status; }
+    public Integer getBoardId() { return board.getId(); }
 }

@@ -37,6 +37,8 @@ public class Board {
         this.passwordSalt = passwordSalt;
     }
 
+    public Integer getId() { return id; }
+
     public String getTitle() { return title; }
 
     public void setTitle(String title) { this.title = title; }

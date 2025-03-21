@@ -1,8 +1,8 @@
 package com.crud.first.demo.dto.comment;
 
-import jakarta.validation.constraints.NotBlank;
+import com.crud.first.demo.entity.Comment;
 
-public class CommentCreateRequestDTO {
-
+public class CommentCreateRequestDTO extends CommentBasicRequestDTO {
+    public CommentCreateRequestDTO(Comment comment) { super(comment); }
 }
 

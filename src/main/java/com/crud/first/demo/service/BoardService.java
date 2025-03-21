@@ -2,7 +2,9 @@ package com.crud.first.demo.service;
 
 import com.crud.first.demo.dto.board.*;
 import com.crud.first.demo.entity.Board;
+import com.crud.first.demo.entity.Comment;
 import com.crud.first.demo.repository.BoardRepository;
+import com.crud.first.demo.repository.CommentRepository;
 import com.crud.first.demo.utils.PasswordHashingSupport;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -11,14 +13,15 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
-import java.util.Optional;
 
 @Service
 public class BoardService {
     private final BoardRepository boardRepository;
+    private final CommentRepository commentRepository;
 
-    public BoardService(BoardRepository boardRepository) {
+    public BoardService(BoardRepository boardRepository, CommentRepository commentRepository) {
         this.boardRepository = boardRepository;
+        this.commentRepository = commentRepository;
     }
 
     public BoardBasicResponseDTO createBoard(BoardCreateRequestDTO requestDTO) {
@@ -70,13 +73,15 @@ public class BoardService {
         return new BoardModifyResponseDTO(board);
     }
 
-    public void deleteBoard(Integer id) {
-        Optional<Board> optionalBoard = boardRepository.findById(id);
-        optionalBoard.ifPresent(board -> {
-            board.setStatus((byte) -1);
-            boardRepository.save(board);
-        });
+    public void deleteBoard(int id) {
+        Board board = boardRepository.findById(id).orElseThrow(() -> new RuntimeException("Comment not found"));
+        board.setStatus((byte) -1);
+        boardRepository.save(board);
 
-        // TODO: 관련 comment status 전부 -1 로 변경 필요
+        List<Comment> comments = commentRepository.findAllByBoard_IdAndStatusNot(id, (byte) -1);
+        for (Comment comment : comments) {
+            comment.setStatus((byte) -1);
+        }
+        commentRepository.saveAll(comments);
     }
 }
