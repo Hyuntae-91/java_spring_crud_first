@@ -3,20 +3,14 @@ package com.crud.first.demo.service;
 import com.crud.first.demo.dto.board.*;
 import com.crud.first.demo.entity.Board;
 import com.crud.first.demo.repository.BoardRepository;
-import jakarta.validation.Valid;
+import com.crud.first.demo.utils.PasswordHashingSupport;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
-import org.springframework.web.bind.annotation.RequestBody;
 
 import java.util.List;
-
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
-import java.security.SecureRandom;
-import java.util.Base64;
 import java.util.Optional;
 
 @Service
@@ -27,27 +21,9 @@ public class BoardService {
         this.boardRepository = boardRepository;
     }
 
-    private String hashPassword(String password, String salt) {
-        try {
-            MessageDigest md = MessageDigest.getInstance("SHA-256");
-            md.update(salt.getBytes());
-            byte[] hashed = md.digest(password.getBytes());
-            return Base64.getEncoder().encodeToString(hashed);
-        } catch (NoSuchAlgorithmException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    private String generateSalt() {
-        SecureRandom sr = new SecureRandom();
-        byte[] salt = new byte[16];
-        sr.nextBytes(salt);
-        return Base64.getEncoder().encodeToString(salt);
-    }
-
-    public BoardCreateResponseDTO createBoard(BoardCreateRequestDTO requestDTO) {
-        String salt = generateSalt();
-        String hashedPassword = hashPassword(requestDTO.getPassword(), salt);
+    public BoardBasicResponseDTO createBoard(BoardCreateRequestDTO requestDTO) {
+        String salt = PasswordHashingSupport.generateSalt();
+        String hashedPassword = PasswordHashingSupport.hashPassword(requestDTO.getPassword(), salt);
         Board board = new Board(
                 requestDTO.getTitle(),
                 requestDTO.getUsername(),
@@ -56,19 +32,26 @@ public class BoardService {
                 salt
         );
         Board savedBoard = boardRepository.save(board);
-        return new BoardCreateResponseDTO(savedBoard);
+        return new BoardBasicResponseDTO(savedBoard);
     }
 
-    public BoardPageResponseDTO getBoards(int page, int size) {
+    public BoardPageResponseDTO getAllBoards(int page, int size) {
         Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
-        Page<Board> boardPage = boardRepository.findAll(pageable);
+        Page<Board> boardPage = boardRepository.findAllByStatusNot((byte) -1, pageable);
 
-        List<BoardCreateResponseDTO> content = boardPage.getContent()
+        List<BoardBasicResponseDTO> content = boardPage.getContent()
                 .stream()
-                .map(BoardCreateResponseDTO::new)
+                .map(BoardBasicResponseDTO::new)
                 .toList();
 
         return new BoardPageResponseDTO(content, boardPage.getTotalPages(), boardPage.getTotalElements());
+    }
+
+    public BoardDetailResponseDTO getBoardDetail(Integer id) {
+        Board board = boardRepository.findByIdAndStatusNot(id, (byte) -1)
+                .orElseThrow(() -> new RuntimeException("Board not found"));
+
+        return new BoardDetailResponseDTO(board);
     }
 
     public BoardModifyResponseDTO modifyBoard(
@@ -76,7 +59,7 @@ public class BoardService {
             BoardModifyRequestDTO requestModifyDTO
     ) {
         Board board = boardRepository.findById(id).orElseThrow(() -> new RuntimeException("Board not found"));
-        String inputHash = hashPassword(requestModifyDTO.getPassword(), board.getPasswordSalt());
+        String inputHash = PasswordHashingSupport.hashPassword(requestModifyDTO.getPassword(), board.getPasswordSalt());
         if (!inputHash.equals(board.getPasswordHash())) {
             throw new RuntimeException("Hash does not match");
         }
@@ -93,5 +76,7 @@ public class BoardService {
             board.setStatus((byte) -1);
             boardRepository.save(board);
         });
+
+        // TODO: 관련 comment status 전부 -1 로 변경 필요
     }
 }

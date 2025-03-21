@@ -17,16 +17,23 @@ public class BoardController {
     }
 
     @PostMapping
-    public BoardCreateResponseDTO createBoard(@Valid @RequestBody BoardCreateRequestDTO requestDTO) {
+    public BoardBasicResponseDTO createBoard(@Valid @RequestBody BoardCreateRequestDTO requestDTO) {
         return boardService.createBoard(requestDTO);
     }
 
     @GetMapping
-    public BoardPageResponseDTO getBoards(
+    public BoardPageResponseDTO getBoardsList(
         @RequestParam(defaultValue = "0") int page,
         @RequestParam(defaultValue = "20") int size
     ) {
-        return boardService.getBoards(page, size);
+        return boardService.getAllBoards(page, size);
+    }
+
+    @GetMapping("/{id}")
+    public BoardDetailResponseDTO getBoardDetail(
+        @PathVariable Integer id
+    ) {
+        return boardService.getBoardDetail(id);
     }
 
     @PutMapping("/{id}")
@@ -38,7 +45,5 @@ public class BoardController {
     }
 
     @DeleteMapping("/{id}")
-    public void deleteBoard(@PathVariable Integer id) {
-        boardService.deleteBoard(id)
-    }
+    public void deleteBoard(@PathVariable Integer id) { boardService.deleteBoard(id); }
 }
